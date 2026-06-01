@@ -1,3 +1,5 @@
 <Solution>
-  <Project Path="MaloteDigital/MaloteDigital.csproj" />
+  <Project Path="MaloteDigital.Api/MaloteDigital.Api.csproj" />
+  <Project Path="MaloteDigital.Domain/MaloteDigital.Domain.csproj" Id="2c54fa80-17a5-4514-a0e8-a41172181fb9" />
+  <Project Path="MaloteDigital.InfraStructure/MaloteDigital.InfraStructure.csproj" />
 </Solution>
