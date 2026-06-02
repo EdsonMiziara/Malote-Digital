@@ -1,6 +1,8 @@
 ﻿using FluentValidation;
+using MaloteDigital.Api.dtos.Create;
 using MaloteDigital.Domain.Entities;
 using MaloteDigital.InfraStructure.db;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace MaloteDigital.Endpoints;
@@ -12,9 +14,9 @@ public static class CondominiumExtensions
         var group = app.MapGroup("/condominiums").WithTags("Condominium");
 
         group.MapPost("/", async (
-            CreateCondominiumDto dto,
-            IValidator<CreateCondominiumDto> validator,
-            MaloteDigitalDbContext db) =>
+            [FromBody] CreateCondominiumDto dto,
+            [FromServices] IValidator<CreateCondominiumDto> validator,
+            [FromServices] MaloteDigitalDbContext db) =>
         {
             var validationResult = await validator.ValidateAsync(dto);
 
@@ -46,5 +48,3 @@ public static class CondominiumExtensions
         });
     }
 }
-
-public record CreateCondominiumDto(string Name, int PreferredPaymentDate);
