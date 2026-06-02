@@ -1,9 +1,9 @@
 ﻿using FluentValidation;
-using MaloteDigital.Domain.Entities;
+using MaloteDigital.Api.dtos.Create;
 
 namespace MaloteDigital.Api.Validators;
 
-public class CondominiumValidator : AbstractValidator<Condominium>
+public class CondominiumValidator : AbstractValidator<CreateCondominiumDto>
 {
     public CondominiumValidator()
     {

@@ -3,6 +3,7 @@ using System;
 using MaloteDigital.InfraStructure.db;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MaloteDigital.InfraStructure.Migrations
 {
     [DbContext(typeof(MaloteDigitalDbContext))]
-    partial class MaloteDigitalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260601211851_AddDetailedDescription")]
+    partial class AddDetailedDescription
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
