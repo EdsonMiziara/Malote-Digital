@@ -11,17 +11,21 @@ public static class ExpenseExtensions
 {
     public static void AddExpenseEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/expenses").WithTags("Expense");
+        var group = app.MapGroup("/api/expenses").WithTags("Expense");
+
+
         group.MapPost("/", async ([FromBody] CreateExpenseDto dto,
             [FromServices] IValidator<CreateExpenseDto> validator,
             [FromServices] MaloteDigitalDbContext db) =>
         {
 
             var validationResults = await validator.ValidateAsync(dto);
-            if (!validationResults.IsValid)
-            {
-                return Results.ValidationProblem(validationResults.ToDictionary());
-            }
+
+            if (!validationResults.IsValid) return Results.ValidationProblem(validationResults.ToDictionary());
+
+            var condominium = await db.Condominiums.FindAsync(dto.CondominiumId);
+
+            if( condominium is null) return Results.NotFound("Condomínio não encontrado.");
 
             var expense = new Expense
             {
@@ -32,10 +36,12 @@ public static class ExpenseExtensions
                 DueDate = dto.DueDate
             };
 
+            expense.CalculatePreferredDate(condominium.PreferredPaymentDate);
+
             db.Expenses.Add(expense);
             db.SaveChanges();
 
-            return Results.Created($"/expenses/{expense.Id}", expense);
+            return Results.Created($"/api/expenses/{expense.Id}", expense);
         });
         group.MapGet("/", async (
             [FromServices] MaloteDigitalDbContext db) =>
@@ -56,7 +62,7 @@ public static class ExpenseExtensions
             return Results.Ok(expense);
         });
 
-        group.MapGet("/Condominium/{condominiumId}", async (
+        group.MapGet("/ByCondominium/{condominiumId}", async (
             Guid condominiumId,
             [FromServices] MaloteDigitalDbContext db) =>
         {

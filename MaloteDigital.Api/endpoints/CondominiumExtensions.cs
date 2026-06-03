@@ -11,7 +11,7 @@ public static class CondominiumExtensions
 {
     public static void AddCondominiumEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/condominiums").WithTags("Condominium");
+        var group = app.MapGroup("/api/condominiums").WithTags("Condominium");
 
         group.MapPost("/", async (
             [FromBody] CreateCondominiumDto dto,
@@ -35,7 +35,7 @@ public static class CondominiumExtensions
             db.Condominiums.Add(condominio);
             await db.SaveChangesAsync();
 
-            return Results.Created($"/condominiums/{condominio.Id}", condominio);
+            return Results.Created($"/api/condominiums/{condominio.Id}", condominio);
         });
 
         group.MapGet("/", async (MaloteDigitalDbContext db) =>
