@@ -13,4 +13,35 @@ public class Expense
     public string Status { get; set; } = "Pendente";
     public string Observation { get; set; } = string.Empty;
     public string DetailedDescription { get; set; } = string.Empty;
+
+
+    public void CalculatePreferredDate(int PreferredDay)
+    {
+        if(PreferredDay == 0) 
+        {
+            RealPaymentDate = DueDate;
+            return; 
+        }
+
+        try
+        {
+            var targetDate = new DateTime(DueDate.Year, DueDate.Month, PreferredDay);
+
+            if (targetDate <= DueDate)
+            {
+                RealPaymentDate = targetDate;
+
+            }
+            if (targetDate > DueDate)
+            {
+                RealPaymentDate = ExpenseEntryDate;
+            }
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            RealPaymentDate = ExpenseEntryDate;
+            return;
+        }
+
+    }
 }
