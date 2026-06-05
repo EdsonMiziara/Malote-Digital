@@ -10,6 +10,8 @@ public class Expense
     public DateTime ExpenseEntryDate { get; set; } = DateTime.UtcNow;
     public DateTime DueDate { get; set; }
     public DateTime? RealPaymentDate { get; set; }
+    public DateTime? IssueDate { get; set; }
+    public string FileHash { get; set; } = string.Empty;
     public string Status { get; set; } = "Pendente";
     public string Observation { get; set; } = string.Empty;
     public string DetailedDescription { get; set; } = string.Empty;
