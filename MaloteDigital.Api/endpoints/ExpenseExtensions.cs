@@ -2,8 +2,11 @@
 using MaloteDigital.Api.dtos.Create;
 using MaloteDigital.Api.dtos.Update;
 using MaloteDigital.Domain.Entities;
+using MaloteDigital.Domain.interfaces;
 using MaloteDigital.InfraStructure.db;
 using Microsoft.AspNetCore.Mvc;
+using System.Runtime.Intrinsics.Arm;
+using static System.Net.WebRequestMethods;
 
 namespace MaloteDigital.Api.endpoints;
 
@@ -43,6 +46,44 @@ public static class ExpenseExtensions
 
             return Results.Created($"/api/expenses/{expense.Id}", expense);
         });
+
+        group.MapPost("/upload", async (
+            IFormFileCollection files, 
+            [FromServices] IStorageService storageService,
+            [FromServices] IPdfReaderService pdfReaderService,
+            [FromServices] MaloteDigitalDbContext db) =>
+        {
+            if (files is null || files.Count == 0)
+                return Results.BadRequest("Nenhum arquivo enviado.");
+
+            foreach (var file in files)
+            {
+                if (Path.GetExtension(file.FileName).ToLower() != ".pdf")
+                    continue;
+
+                using var stream = file.OpenReadStream();
+
+                string relativePath = await storageService.UploadFileAsync(stream, file.FileName, "pdf");
+
+                var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativePath.TrimStart('/'));
+
+                string rawText = await pdfReaderService.ExtractTextAsync(fullPath);
+
+                var expense = new Expense
+                {
+                    Id = Guid.CreateVersion7(),
+                    PdfUrl = relativePath,
+                    DetailedDescription = $"Importado via arquivo: {file.FileName}"
+                };
+
+                db.Expenses.Add(expense);
+            }
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { message = $"{files.Count} arquivos processados." });
+        });
+
         group.MapGet("/", async (
             [FromServices] MaloteDigitalDbContext db) =>
         {
@@ -50,6 +91,7 @@ public static class ExpenseExtensions
 
             return Results.Ok(expenses);
         });
+
         group.MapGet("/{id}", async (
             Guid id,
             [FromServices] MaloteDigitalDbContext db) =>

@@ -13,8 +13,7 @@ public class Expense
     public string Status { get; set; } = "Pendente";
     public string Observation { get; set; } = string.Empty;
     public string DetailedDescription { get; set; } = string.Empty;
-
-
+    public string? PdfUrl { get; set;}
     public void CalculatePreferredDate(int PreferredDay)
     {
         if(PreferredDay == 0) 
