@@ -1,8 +1,11 @@
+using FluentValidation;
+using MaloteDigital.Domain.interfaces;
+using MaloteDigital.Domain.Interfaces;
 using MaloteDigital.Endpoints;
 using MaloteDigital.InfraStructure.db;
+using MaloteDigital.InfraStructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
-using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +14,10 @@ builder.Services.AddDbContext<MaloteDigitalDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQLConnection")));
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddScoped<ITextParserService, TextParserService>();
+builder.Services.AddScoped<IPdfReaderService, PdfReaderService>();
+builder.Services.AddScoped<IStorageService, LocalStorageService>();
+builder.Services.AddScoped<IHashService, HashService>();
 
 var app = builder.Build();
 

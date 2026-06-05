@@ -5,8 +5,7 @@ using MaloteDigital.Domain.Entities;
 using MaloteDigital.Domain.interfaces;
 using MaloteDigital.InfraStructure.db;
 using Microsoft.AspNetCore.Mvc;
-using System.Runtime.Intrinsics.Arm;
-using static System.Net.WebRequestMethods;
+using Microsoft.EntityFrameworkCore;
 
 namespace MaloteDigital.Api.endpoints;
 
@@ -48,13 +47,20 @@ public static class ExpenseExtensions
         });
 
         group.MapPost("/upload", async (
-            IFormFileCollection files, 
-            [FromServices] IStorageService storageService,
-            [FromServices] IPdfReaderService pdfReaderService,
-            [FromServices] MaloteDigitalDbContext db) =>
+    IFormFileCollection files,
+    Guid condominiumId,
+    [FromServices] IHashService hashService,
+    [FromServices] ITextParserService textParserService,
+    [FromServices] IStorageService storageService,
+    [FromServices] IPdfReaderService pdfReaderService,
+    [FromServices] MaloteDigitalDbContext db) =>
         {
             if (files is null || files.Count == 0)
                 return Results.BadRequest("Nenhum arquivo enviado.");
+
+            var condominium = await db.Condominiums.FindAsync(condominiumId);
+            if (condominium is null)
+                return Results.NotFound("Condomínio não encontrado no sistema.");
 
             foreach (var file in files)
             {
@@ -63,25 +69,41 @@ public static class ExpenseExtensions
 
                 using var stream = file.OpenReadStream();
 
+                string fileHash = hashService.ComputeHash(stream);
+
+                stream.Position = 0;
+
+                bool isDuplicate = await db.Expenses.AnyAsync(e => e.FileHash == fileHash);
+                if (isDuplicate)
+                    return Results.Conflict($"O arquivo '{file.FileName}' já foi importado anteriormente.");
+
                 string relativePath = await storageService.UploadFileAsync(stream, file.FileName, "pdf");
 
                 var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativePath.TrimStart('/'));
 
                 string rawText = await pdfReaderService.ExtractTextAsync(fullPath);
+                var extractedData = textParserService.ParseExpenseData(rawText);
 
                 var expense = new Expense
                 {
                     Id = Guid.CreateVersion7(),
                     PdfUrl = relativePath,
-                    DetailedDescription = $"Importado via arquivo: {file.FileName}"
+                    FileHash = fileHash,
+                    CondominiumId = condominiumId,
+                    DetailedDescription = $"Importado via arquivo: {file.FileName}",
+                    Amount = extractedData.Amount,
+                    DueDate = extractedData.DueDate ?? DateTime.UtcNow.AddDays(7),
+                    IssueDate = extractedData.IssueDate
                 };
+
+                expense.CalculatePreferredDate(condominium.PreferredPaymentDate);
 
                 db.Expenses.Add(expense);
             }
 
             await db.SaveChangesAsync();
 
-            return Results.Ok(new { message = $"{files.Count} arquivos processados." });
+            return Results.Ok(new { message = $"{files.Count} arquivos processados com sucesso." });
         });
 
         group.MapGet("/", async (
