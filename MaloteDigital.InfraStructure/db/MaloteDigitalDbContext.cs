@@ -40,5 +40,10 @@ public class MaloteDigitalDbContext : DbContext
                   .HasForeignKey(b => b.CondominiumId)
                   .OnDelete(DeleteBehavior.Cascade); 
         });
+
+        modelBuilder.Entity<Expense>()
+        .HasIndex(e => new { e.CondominiumId, e.Amount, e.DueDate })
+        .IsUnique()
+        .HasDatabaseName("IX_Expense_Unique_Condo_Amount_DueDate");
     }
 }
