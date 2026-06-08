@@ -1,4 +1,4 @@
-﻿using MaloteDigital.Domain.Interfaces;
+﻿using MaloteDigital.Domain.interfaces;
 using System.Security.Cryptography;
 
 namespace MaloteDigital.InfraStructure.Services;

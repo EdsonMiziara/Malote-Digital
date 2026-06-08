@@ -11,11 +11,26 @@ public class Expense
     public DateTime DueDate { get; set; }
     public DateTime? RealPaymentDate { get; set; }
     public DateTime? IssueDate { get; set; }
+    public DateTime? ActualPaymentDate { get; set; }
     public string FileHash { get; set; } = string.Empty;
     public string Status { get; set; } = "Pendente";
     public string Observation { get; set; } = string.Empty;
     public string DetailedDescription { get; set; } = string.Empty;
     public string? PdfUrl { get; set;}
+    /// <summary>
+    /// Efetua a baixa definitiva da despesa com base no extrato bancário.
+    /// </summary>
+    /// <exception cref="BusinessException">Lançada caso a despesa já esteja paga.</exception>
+    public void FinalizePayment(DateTime paymentDate)
+    {
+        if (Status == "Pago")
+        {
+            throw new BusinessException($"A despesa com o ID {Id} já possui o status Pago. Operação de conciliação abortada.");
+        }
+
+        Status = "Pago";
+        ActualPaymentDate = paymentDate;
+    }
     public void CalculatePreferredDate(int PreferredDay)
     {
         if(PreferredDay == 0) 
