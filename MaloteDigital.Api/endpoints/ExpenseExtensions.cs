@@ -1,8 +1,11 @@
 ﻿using FluentValidation;
 using MaloteDigital.Api.dtos.Create;
 using MaloteDigital.Api.dtos.Update;
+using MaloteDigital.Domain;
 using MaloteDigital.Domain.Entities;
 using MaloteDigital.Domain.interfaces;
+using MaloteDigital.Domain.Interfaces;
+using MaloteDigital.Domain.ValueObjects;
 using MaloteDigital.InfraStructure.db;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -27,7 +30,7 @@ public static class ExpenseExtensions
 
             var condominium = await db.Condominiums.FindAsync(dto.CondominiumId);
 
-            if( condominium is null) return Results.NotFound("Condomínio não encontrado.");
+            if (condominium is null) return Results.NotFound("Condomínio não encontrado.");
 
             var expense = new Expense
             {
@@ -104,6 +107,76 @@ public static class ExpenseExtensions
             await db.SaveChangesAsync();
 
             return Results.Ok(new { message = $"{files.Count} arquivos processados com sucesso." });
+        });
+
+        group.MapPost("/conciliation", async (
+            IFormFile file,
+            Guid condominiumId,
+            [FromServices] IOfxParserService ofxParserService,
+            [FromServices] IAuditService auditService,
+            [FromServices] MaloteDigitalDbContext db) =>
+        {
+            if (file is null || file.Length == 0)
+                return Results.BadRequest("Nenhum arquivo enviado.");
+            if (Path.GetExtension(file.FileName).ToLower() != ".ofx")
+                return Results.BadRequest("Arquivo inválido. Por favor, envie um arquivo OFX.");
+
+            using var stream = file.OpenReadStream();
+            List<OfxTransactionResult> bankDebits = ofxParserService.ParseDebits(stream);
+
+            if (!bankDebits.Any())
+                return Results.Ok(new { message = "Nenhuma transação de débito encontrada no arquivo OFX." });
+
+            var pendingExpenses = await db.Expenses
+                .Where(e => e.CondominiumId == condominiumId && e.Status == "Pendente")
+                .ToListAsync();
+
+            int reconciledCount = 0;
+            var logs = new List<string>();
+            try
+            {
+                foreach (var debit in bankDebits)
+                {
+                    var matchedExpense = pendingExpenses.FirstOrDefault(e =>
+                        e.Amount == debit.Amount &&
+                    debit.DatePosted >= e.DueDate.AddDays(-3) &&
+                    debit.DatePosted <= e.DueDate.AddDays(3));
+
+                    if (matchedExpense != null)
+                    {
+                        matchedExpense.FinalizePayment(debit.DatePosted);
+
+                        reconciledCount++;
+                        logs.Add($"Boleto '{matchedExpense.DetailedDescription}' conciliado com débito bancário de {debit.Amount} em {debit.DatePosted:d}.");
+
+                        pendingExpenses.Remove(matchedExpense);
+                    }
+                }
+                if (reconciledCount > 0)
+                {
+                    await db.SaveChangesAsync();
+
+                    var auditDetails = $"Conciliação automatizada via arquivo OFX '{file.FileName}'. Total de {reconciledCount} despesas baixadas de forma atômica.";
+
+                    await auditService.LogAsync(new AuditLogResult(
+                        Action: "EXECUTE_BANK_RECONCILIATION",
+                        Details: auditDetails
+                    ));
+                }
+            }
+            catch (BusinessException ex)
+            {
+                logs.Add($"Erro durante a conciliação: {ex.Message}");
+                return Results.BadRequest(new { error = ex.Message });
+            }
+
+            return Results.Ok(new
+            {
+                message = "Processamento do extrato OFX concluído.",
+                reconciledTransactions = reconciledCount,
+                details = logs
+            });
+
         });
 
         group.MapGet("/", async (

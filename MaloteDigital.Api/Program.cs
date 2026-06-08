@@ -17,7 +17,9 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddScoped<ITextParserService, TextParserService>();
 builder.Services.AddScoped<IPdfReaderService, PdfReaderService>();
 builder.Services.AddScoped<IStorageService, LocalStorageService>();
+builder.Services.AddScoped<IOfxParserService, OfxParserService>();
 builder.Services.AddScoped<IHashService, HashService>();
+builder.Services.AddScoped<IAuditService, ConsoleAuditService>();
 
 var app = builder.Build();
 
