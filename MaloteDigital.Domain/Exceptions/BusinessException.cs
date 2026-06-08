@@ -1,4 +1,4 @@
-﻿namespace MaloteDigital.Domain;
+﻿namespace MaloteDigital.Domain.Exceptions;
 
 public class BusinessException : Exception
 {

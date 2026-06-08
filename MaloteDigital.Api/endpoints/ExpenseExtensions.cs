@@ -1,8 +1,8 @@
 ﻿using FluentValidation;
 using MaloteDigital.Api.dtos.Create;
 using MaloteDigital.Api.dtos.Update;
-using MaloteDigital.Domain;
 using MaloteDigital.Domain.Entities;
+using MaloteDigital.Domain.Exceptions;
 using MaloteDigital.Domain.interfaces;
 using MaloteDigital.Domain.Interfaces;
 using MaloteDigital.Domain.ValueObjects;

@@ -1,4 +1,7 @@
-﻿namespace MaloteDigital.Domain.Entities;
+﻿using MaloteDigital.Domain.Enums;
+using MaloteDigital.Domain.Exceptions;
+
+namespace MaloteDigital.Domain.Entities;
 
 public class Expense
 {
@@ -14,9 +17,12 @@ public class Expense
     public DateTime? ActualPaymentDate { get; set; }
     public string FileHash { get; set; } = string.Empty;
     public string Status { get; set; } = "Pendente";
-    public string Observation { get; set; } = string.Empty;
     public string DetailedDescription { get; set; } = string.Empty;
+    public string? Observation { get; set; }
+    public ExpenseType ExpenseType { get; set; } = ExpenseType.Fixed;
     public string? PdfUrl { get; set;}
+
+
     /// <summary>
     /// Efetua a baixa definitiva da despesa com base no extrato bancário.
     /// </summary>
