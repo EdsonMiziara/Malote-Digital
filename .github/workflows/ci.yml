@@ -1,0 +1,37 @@
+﻿name: Continuous Integration (CI)
+
+on:
+  push:
+    branches: [ "main", "feature/*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.x
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore MaloteDigital.slnx
+
+    - name: Build solution
+      run: dotnet build MaloteDigital.slnx --no-restore --configuration Release
+
+    - name: Run automated tests
+      run: dotnet test MaloteDigital.UnitTests/MaloteDigital.UnitTests.csproj --no-build --configuration Release --verbosity normal
