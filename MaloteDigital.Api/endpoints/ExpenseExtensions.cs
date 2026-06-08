@@ -1,7 +1,9 @@
 ﻿using FluentValidation;
 using MaloteDigital.Api.dtos.Create;
 using MaloteDigital.Api.dtos.Update;
+using MaloteDigital.Api.Dtos.Response;
 using MaloteDigital.Domain.Entities;
+using MaloteDigital.Domain.Enums;
 using MaloteDigital.Domain.Exceptions;
 using MaloteDigital.Domain.interfaces;
 using MaloteDigital.Domain.Interfaces;
@@ -180,9 +182,32 @@ public static class ExpenseExtensions
         });
 
         group.MapGet("/", async (
+            Guid condominiumId,
+            [FromQuery] string? type,
             [FromServices] MaloteDigitalDbContext db) =>
         {
-            var expenses = db.Expenses.ToList();
+            var query = db.Expenses.Where(e => e.CondominiumId == condominiumId);
+            if (!string.IsNullOrEmpty(type))
+            {
+                if (Enum.TryParse<ExpenseType>(type, true, out var parsedType))
+                {
+                    query = query.Where(e => e.ExpenseType == parsedType);
+                }
+                else
+                {
+                    return Results.BadRequest("Tipo de despesa inválido. Use 'fixed' ou 'extraordinary'.");
+                }
+            }
+
+            var expenses = await query.OrderBy(e => e.DueDate).Select(e => new ExpenseResponseDto(
+                e.Id,
+                e.Amount,
+                e.DueDate,
+                e.Status,
+                e.DetailedDescription,
+                e.ExpenseType.ToString(),
+                e.Observation
+                )).ToListAsync();
 
             return Results.Ok(expenses);
         });
