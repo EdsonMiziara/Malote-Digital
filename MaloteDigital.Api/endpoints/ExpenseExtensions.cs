@@ -2,6 +2,7 @@
 using MaloteDigital.Api.dtos.Create;
 using MaloteDigital.Api.dtos.Update;
 using MaloteDigital.Api.Dtos.Response;
+using MaloteDigital.Api.Dtos.Update;
 using MaloteDigital.Domain.Entities;
 using MaloteDigital.Domain.Enums;
 using MaloteDigital.Domain.Exceptions;
@@ -179,6 +180,40 @@ public static class ExpenseExtensions
                 details = logs
             });
 
+        });
+
+        group.MapPost("/{id}/pay-manually", async (Guid id,
+            [FromServices] IAuditService auditService,
+            [FromServices] MaloteDigitalDbContext db) =>
+        {
+            var expense = await db.Expenses.FindAsync(id);
+
+            if (expense is null) return Results.NotFound("Despesa não encontrada.");
+
+            if (expense.Status == "Pago") return Results.BadRequest("Despesa já está paga.");
+
+            expense.FinalizePayment(DateTime.UtcNow);
+
+            await auditService.LogAsync(new AuditLogResult(
+                Action: "MANUAL_PAYMENT",
+                Details: $"Despesa '{expense.DetailedDescription}' marcada como paga manualmente."
+            ));
+
+            await db.SaveChangesAsync();
+            return Results.Ok(expense);
+        });
+
+        group.MapPatch("/{id:guid}/observatino", async (Guid id,
+            [FromBody] UpdateExpenseObservationDto dto,
+            [FromServices] MaloteDigitalDbContext db) =>
+        {
+            var expense = await db.Expenses.FindAsync(id);
+            if (expense is null) return Results.NotFound("Despesa não encontrada.");
+            
+            expense.Observation = dto.Observation;
+
+            await db.SaveChangesAsync();
+            return Results.Ok(expense);
         });
 
         group.MapGet("/", async (
