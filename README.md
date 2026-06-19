@@ -30,8 +30,43 @@ O projeto foi construído seguindo os princípios de **Clean Architecture** (Arq
 
 ### 🏗️ Estrutura da Solução (`.slnx`)
 
-```text
-├── MaloteDigital.Api/            # Camada de Apresentação (Endpoints, DTOs de Entrada, Filtros)
-├── MaloteDigital.Domain/         # O Coração do Sistema (Entidades Ricas, Enums, Interfaces de Contrato)
-├── MaloteDigital.Infrastructure/ # Provedores Externos (Implementação do Banco, Parsers de OFX, Workers)
-└── MaloteDigital.UnitTests/      # Suíte de Testes Unitários de Alta Performance (xUnit)
+```mermaid
+graph TD
+    %% Estilos de Alto Contraste para Dark/Light Mode
+    classDef infra stroke:#0288d1,stroke-width:3px,stroke-dasharray: 5 5;
+    classDef dominio stroke:#43a047,stroke-width:3px;
+    classDef seguranca stroke:#e53935,stroke-width:3px;
+    classDef db stroke:#8d6e63,stroke-width:3px;
+
+    %% Camada de Entrada
+    subgraph Camada_de_Entrada [1. Camada de Apresentação / API]
+        A[Requisição HTTP / Upload de Arquivo] --> B[Minimal APIs - .NET 8]
+        B --> C[Manipulação Segura de Stream - stream.Position = 0]
+    end
+    class B,C infra;
+
+    %% Camada de Domínio
+    subgraph Camada_de_Dominio [2. Núcleo do Negócio - Rich Domain Model]
+        C --> D[Motor de Regras de Negócio]
+        D --> E[Cálculo de Agendamento - Regra Dia Coringa 0]
+        D --> F[Validador de Idempotência - Geração de Hash SHA-256]
+        D --> G[Travas de Ciclo de Vida da Despesa]
+    end
+    class D,E,F,G dominio;
+
+    %% Camada de Persistência e Segurança
+    subgraph Camada_de_Persistencia [3. Infraestrutura de Dados & Auditoria]
+        F & G & E --> H[Entity Framework Core - DbContext Customizado]
+        
+        subgraph Interceptador_Seguranca [Barreira de Segurança Estrita]
+            H --> I[Sobrescrita do SaveChangesAsync]
+            I --> J{Operação é UPDATE ou DELETE?}
+            J -- Sim --> K[Bloqueio de Operação / Exception]
+            J -- Não --> L[Permite Apenas Inserção - Histórico Append-Only]
+        end
+    end
+    class H,I,J,K,L seguranca;
+
+    %% Banco de Dados
+    L --> M[(PostgreSQL)]
+    class M db;
