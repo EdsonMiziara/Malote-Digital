@@ -40,7 +40,7 @@ graph TD
 
     %% Camada de Entrada
     subgraph Camada_de_Entrada [1. Camada de Apresentação / API]
-        A[Requisição HTTP / Upload de Arquivo] --> B[Minimal APIs - .NET 8]
+        A[Requisição HTTP / Upload de Arquivo] --> B[Minimal APIs - .NET 10]
         B --> C[Manipulação Segura de Stream - stream.Position = 0]
     end
     class B,C infra;
